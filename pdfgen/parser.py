@@ -453,7 +453,7 @@ class Parser(object):
                     v = colors.HexColor(eval('0x' + v[1:]))
                 new_dict[nk] = v
 
-            if not 'leading' in new_dict and 'fontSize' in new_dict:
+            if not new_dict.has_key('leading') and new_dict.has_key('fontSize'):
                 new_dict['leading'] = new_dict['fontSize'] + 2.0
 
             if source_name is not None:
@@ -463,7 +463,7 @@ class Parser(object):
 
             new_dict.update({'name': name})
 
-            if name in self.styles:
+            if self.styles.has_key(name):
                 self.styles[name].__dict__.update(new_dict)
             else:
                 self.styles.add(ParagraphStyle(**new_dict))
@@ -472,7 +472,7 @@ class Parser(object):
             name = raw_style.strip()
             if name == 'end' or name == '':
                 self.style_stack.pop()
-            elif name in self.styles:
+            elif self.styles.has_key(name):
                 style = self.styles[name]
                 self.style_stack.append(style)
 
@@ -596,7 +596,7 @@ class XmlParser(object):
                 v = colors.HexColor(eval('0x' + v[1:]))
             new_dict[nk] = v
 
-        if not 'leading' in new_dict and 'fontSize' in new_dict:
+        if not new_dict.has_key('leading') and new_dict.has_key('fontSize'):
             new_dict['leading'] = new_dict['fontSize'] + 2.0
 
         if source_name is not None:
@@ -606,7 +606,7 @@ class XmlParser(object):
 
         new_dict.update({'name': name})
 
-        if name in self.styles:
+        if self.styles.has_key(name):
             self.styles[name].__dict__.update(new_dict)
         else:
             self.styles.add(ParagraphStyle(**new_dict))
@@ -656,7 +656,7 @@ class XmlParser(object):
         if 'area' in tstyle_dict:
             del tstyle_dict['area']
 
-        if 'border' in tstyle_dict:
+        if tstyle_dict.has_key('border'):
             border = tstyle_dict['border']
             tstyle_dict.update({'border-left': border,
                                 'border-right': border,
@@ -665,7 +665,7 @@ class XmlParser(object):
                                 })
             del tstyle_dict['border']
 
-        if 'padding' in tstyle_dict:
+        if tstyle_dict.has_key('padding'):
             padding = tstyle_dict['padding']
             tstyle_dict.update({'padding-left': padding,
                                 'padding-right': padding,
