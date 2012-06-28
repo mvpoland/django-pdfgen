@@ -510,11 +510,12 @@ class XmlParser(object):
 
         Support MEDIA_URL and STATIC_URL
         '''
-        if self.static_url and url.startswith(self.static_url) and find:
-            return find(url.replace(self.static_url, '', 1))
+        if self.static_url and url.startswith(self.static_url):
+            url = url.replace(self.static_url, '', 1)
         elif self.media_url and url.startswith(self.media_url):
-            return os.path.join(settings.MEDIA_ROOT, url.replace(self.media_url, '', 1))
-        return url
+            url = url.replace(self.media_url, '', 1)
+
+        return find(url)
 
     def merge_parts(self, parts):
         if self.document is not None:
