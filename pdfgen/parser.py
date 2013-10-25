@@ -9,6 +9,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.enums import TA_RIGHT, TA_CENTER, TA_LEFT
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen.canvas import Canvas
 from reportlab.platypus import Paragraph, Table, Spacer, Image, PageBreak
 from reportlab.platypus.doctemplate import SimpleDocTemplate
@@ -783,14 +784,20 @@ class XmlParser(object):
         if self.fonts.get(face_name, None) is None:
             afm = find(base_name + '.afm')
             pfb = find(base_name + '.pfb')
+            ttf = find(base_name + '.ttf')
 
-            try:
-                face = pdfmetrics.EmbeddedType1Face(afm, pfb)
+            if afm:
+                try:
+                    face = pdfmetrics.EmbeddedType1Face(afm, pfb)
 
-                pdfmetrics.registerTypeFace(face)
-                font = pdfmetrics.Font(face_name, face_name, 'WinAnsiEncoding')
-                pdfmetrics.registerFont(font)
-            except:
-                pass
+                    pdfmetrics.registerTypeFace(face)
+                    font = pdfmetrics.Font(face_name, face_name, 'WinAnsiEncoding')
+                    pdfmetrics.registerFont(font)
+                except:
+                    pass
+            elif ttf:
+                pdfmetrics.registerFont(TTFont(face_name, ttf))
+            else:
+                raise Exception('Cannot find font %s (tried .afm, .pfb and .ttf)' % base_name)
         else:
             self.fonts[face_name] = True
