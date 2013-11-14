@@ -6,7 +6,7 @@ import reportlab
 from reportlab.lib import pagesizes, colors
 from reportlab.lib.units import cm, inch, mm, toLength
 from reportlab.lib.pagesizes import A4
-from reportlab.lib.enums import TA_RIGHT, TA_CENTER, TA_LEFT
+from reportlab.lib.enums import TA_RIGHT, TA_CENTER, TA_LEFT, TA_JUSTIFY
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
@@ -72,6 +72,7 @@ CSS_DICT = {
     'left': TA_LEFT,
     'right': TA_RIGHT,
     'center': TA_CENTER,
+    'justify': TA_JUSTIFY,
 }
 
 
