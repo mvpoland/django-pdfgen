@@ -7,6 +7,10 @@ from django.template.loader import render_to_string
 from django.utils import translation
 
 from pdfgen.parser import Parser, XmlParser, find
+from PyPDF2 import PdfFileMerger, PdfFileReader
+from itertools import repeat
+
+import StringIO
 
 
 def get_parser(template_name):
@@ -59,65 +63,22 @@ def multiple_templates_to_pdf_download(template_names, context, context_instance
     """
     Render multiple templates with the same context into a single download
     """
-    context_instance = context_instance or Context()
-
-    response = HttpResponse(mimetype='application/pdf')
-    response['Content-Disposition'] = u'attachment; filename=%s' % (filename or u'document.pdf')
-
-    all_parts = []
-
-    for template_name in template_names:
-        parser = get_parser(template_name)
-        input = render_to_string(template_name, context, context_instance)
-        parts = parser.parse_parts(input)
-        all_parts += parts
-        all_parts.append(PageBreak())
-
-    output = parser.merge_parts(all_parts)
-
-    response.write(output)
-
-    return response
-
-
-def multiple_contexts_to_pdf_data(template_name, contexts, context_instance):
-    """
-    Render multiple templates with the same context into a single data bundle
-    """
-    all_parts = []
-    parser = get_parser(template_name)
-
-    old_lang = translation.get_language()
-
-    for context in contexts:
-        if 'language' in context:
-            translation.activate(context['language'])
-        input = render_to_string(template_name, context, context_instance)
-        parts = parser.parse_parts(input)
-        all_parts += parts
-        all_parts.append(PageBreak())
-
-    output = parser.merge_parts(all_parts)
-
-    translation.activate(old_lang)
-
-    return output
+    return multiple_contexts_and_templates_to_pdf_download(
+        zip(repeat(context, len(template_names)), template_names),
+        context_instance=context_instance,
+        filename=filename
+    )
 
 
 def multiple_contexts_to_pdf_download(template_name, contexts, context_instance=None, filename=None):
     """
     Render a single template with multiple contexts into a single download
     """
-    context_instance = context_instance or Context()
-
-    response = HttpResponse(mimetype='application/pdf')
-    response['Content-Disposition'] = u'attachment; filename=%s' % (filename or u'document.pdf')
-
-    output = multiple_contexts_to_pdf_data(template_name, contexts, context_instance)
-
-    response.write(output)
-
-    return response
+    return multiple_contexts_and_templates_to_pdf_download(
+        zip(contexts, repeat(template_name, len(contexts))),
+        context_instance=context_instance,
+        filename=filename
+    )
 
 
 def multiple_contexts_and_templates_to_pdf_download(contexts_templates, context_instance=None, filename=None):
@@ -129,8 +90,7 @@ def multiple_contexts_and_templates_to_pdf_download(contexts_templates, context_
     response = HttpResponse(mimetype='application/pdf')
     response['Content-Disposition'] = u'attachment; filename=%s' % (filename or u'document.pdf')
 
-    all_parts = []
-
+    merger = PdfFileMerger()
     old_lang = translation.get_language()
 
     for context, template_name in contexts_templates:
@@ -138,14 +98,15 @@ def multiple_contexts_and_templates_to_pdf_download(contexts_templates, context_
         if 'language' in context:
             translation.activate(context['language'])
         input = render_to_string(template_name, context, context_instance)
-        parts = parser.parse_parts(input)
-        all_parts += parts
-        all_parts.append(PageBreak())
-
-    output = parser.merge_parts(all_parts)
+        outstream = StringIO.StringIO()
+        outstream.write(parser.parse(input))
+        reader = PdfFileReader(outstream)
+        merger.append(reader)
 
     translation.activate(old_lang)
 
-    response.write(output)
+    output = StringIO.StringIO()
+    merger.write(output)
+    response.write(output.getvalue())
 
     return response
