@@ -7,8 +7,14 @@ from django.template.loader import render_to_string
 from django.utils import translation
 
 from pdfgen.parser import Parser, XmlParser, find
-from PyPDF2 import PdfFileMerger, PdfFileReader
 from itertools import repeat
+
+try:
+    from PyPDF2 import PdfFileMerger, PdfFileReader
+    USE_PYPDF2 = True
+except ImportError:
+    # Use old version as fallback
+    USE_PYPDF2 = False
 
 import StringIO
 
@@ -90,7 +96,11 @@ def multiple_contexts_and_templates_to_pdf_download(contexts_templates, context_
     response = HttpResponse(mimetype='application/pdf')
     response['Content-Disposition'] = u'attachment; filename=%s' % (filename or u'document.pdf')
 
-    merger = PdfFileMerger()
+    if USE_PYPDF2:
+        merger = PdfFileMerger()
+    else:
+        all_parts = []
+
     old_lang = translation.get_language()
 
     for context, template_name in contexts_templates:
@@ -98,15 +108,25 @@ def multiple_contexts_and_templates_to_pdf_download(contexts_templates, context_
         if 'language' in context:
             translation.activate(context['language'])
         input = render_to_string(template_name, context, context_instance)
-        outstream = StringIO.StringIO()
-        outstream.write(parser.parse(input))
-        reader = PdfFileReader(outstream)
-        merger.append(reader)
+        if USE_PYPDF2:
+            outstream = StringIO.StringIO()
+            outstream.write(parser.parse(input))
+            reader = PdfFileReader(outstream)
+            merger.append(reader)
+        else:
+            parts = parser.parse_parts(input)
+            all_parts += parts
+            all_parts.append(PageBreak())
 
     translation.activate(old_lang)
 
-    output = StringIO.StringIO()
-    merger.write(output)
-    response.write(output.getvalue())
+    if USE_PYPDF2:
+        output = StringIO.StringIO()
+        merger.write(output)
+        output = output.getvalue()
+    else:
+        output = parser.merge_parts(all_parts)
+
+    response.write(output)
 
     return response
