@@ -53,7 +53,8 @@ def render_to_pdf_download(template_name, context, context_instance=None, filena
     context_instance = context_instance or Context()
 
     response = HttpResponse(mimetype='application/pdf')
-    response['Content-Disposition'] = u'attachment; filename=%s' % (filename or u'document.pdf')
+    if filename:
+        response['Content-Disposition'] = u'attachment; filename=%s' % filename
 
     input = render_to_string(template_name, context, context_instance)
 
