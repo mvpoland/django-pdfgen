@@ -28,17 +28,6 @@ def pdf_download(default_template_name, default_file_name=None, default_context=
     # Create decorator
     def decorator(view_func):
         # Check whether this template exists
-        if settings.DEBUG:
-            try:
-                loader.get_template(default_template_name)
-            except TemplateDoesNotExist:
-                print '\n=== ERROR: pdf_download detected missing template:'
-                print '            Template: %s' % default_template_name
-                try:
-                    print '            From:     %s   def %s\n' % (view_func.func_code.co_filename, view_func.func_code.co_name)
-                except:
-                    print '            From:     %s\n' % unicode(view_func)
-
         @wraps(view_func)
         def decorate(request, *args, **kwargs):
             """
