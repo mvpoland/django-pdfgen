@@ -10,7 +10,7 @@ from pdfgen.parser import Parser
 from pdfgen.shortcuts import render_to_pdf_download, multiple_templates_to_pdf_download
 
 
-def pdf_download(default_template_name, default_file_name=None, default_context=None):
+def pdf_download(default_template_name, default_file_name=None, default_context=None, check_template=False):
     """
     Based on templatable_view from Jonathan Slenders
 
@@ -27,17 +27,18 @@ def pdf_download(default_template_name, default_file_name=None, default_context=
     """
     # Create decorator
     def decorator(view_func):
-        # Check whether this template exists
-        if settings.DEBUG:
-            try:
-                loader.get_template(default_template_name)
-            except TemplateDoesNotExist:
-                print '\n=== ERROR: pdf_download detected missing template:'
-                print '            Template: %s' % default_template_name
+        if check_template:
+            # Check whether this template exists
+            if settings.DEBUG:
                 try:
-                    print '            From:     %s   def %s\n' % (view_func.func_code.co_filename, view_func.func_code.co_name)
-                except:
-                    print '            From:     %s\n' % unicode(view_func)
+                    loader.get_template(default_template_name)
+                except TemplateDoesNotExist:
+                    print '\n=== ERROR: pdf_download detected missing template:'
+                    print '            Template: %s' % default_template_name
+                    try:
+                        print '            From:     %s   def %s\n' % (view_func.func_code.co_filename, view_func.func_code.co_name)
+                    except:
+                        print '            From:     %s\n' % unicode(view_func)
 
         @wraps(view_func)
         def decorate(request, *args, **kwargs):
