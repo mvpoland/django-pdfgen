@@ -88,14 +88,16 @@ def multiple_contexts_to_pdf_download(template_name, contexts, context_instance=
     )
 
 
-def multiple_contexts_and_templates_to_pdf_download(contexts_templates, context_instance=None, filename=None):
-    """
-    Render multiple templates with multiple contexts into a single download
-    """
-    context_instance = context_instance or Context()
+def multiple_contexts_to_pdf_data(template_name, contexts, context_instance=None, filename=None):
+    return multiple_contexts_and_templates_to_pdf_data(
+        zip(contexts, repeat(template_name, len(contexts))),
+        context_instance=context_instance,
+        filename=filename
+    )
 
-    response = HttpResponse(mimetype='application/pdf')
-    response['Content-Disposition'] = u'attachment; filename=%s' % (filename or u'document.pdf')
+
+def multiple_contexts_and_templates_to_pdf_data(contexts_templates, context_instance=None, filename=None):
+    context_instance = context_instance or Context()
 
     if USE_PYPDF2:
         merger = PdfFileMerger()
@@ -128,6 +130,20 @@ def multiple_contexts_and_templates_to_pdf_download(contexts_templates, context_
     else:
         output = parser.merge_parts(all_parts)
 
-    response.write(output)
+    return output
 
+
+def multiple_contexts_and_templates_to_pdf_download(contexts_templates, context_instance=None, filename=None):
+    """
+    Render multiple templates with multiple contexts into a single download
+    """
+    response = HttpResponse(mimetype='application/pdf')
+    response['Content-Disposition'] = u'attachment; filename=%s' % (filename or u'document.pdf')
+
+    output = multiple_contexts_and_templates_to_pdf_data(
+                    contexts_templates=contexts_templates,
+                    context_instance=context_instance,
+                    filename=filename)
+
+    response.write(output)
     return response
