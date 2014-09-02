@@ -702,6 +702,13 @@ class XmlParser(object):
 
     def table(self, e):
         cols = [toLength(i.strip()) for i in e.get('cols').split(',')]
+
+        height = e.get('height')
+        if height and len(height.split(',')) > 1:
+            height = [toLength(i.strip()) for i in height.split(',')]
+        else:
+            height = toLength(height)
+
         align = e.get('align', 'left').upper()
 
         tstyles = []
@@ -713,7 +720,7 @@ class XmlParser(object):
             else:
                 rows.append(list(self.parse_element(c)))
 
-        table_obj = Table(rows, cols, hAlign=align, style=tstyles)
+        table_obj = Table(rows, cols, rowHeights=height, hAlign=align, style=tstyles)
         yield table_obj
 
     def pagebreak(self, e):
