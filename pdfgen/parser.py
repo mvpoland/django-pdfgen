@@ -706,7 +706,7 @@ class XmlParser(object):
         height = e.get('height')
         if height and len(height.split(',')) > 1:
             height = [toLength(i.strip()) for i in height.split(',')]
-        else:
+        elif height:
             height = toLength(height)
 
         align = e.get('align', 'left').upper()
