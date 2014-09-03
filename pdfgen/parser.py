@@ -9,6 +9,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.enums import TA_RIGHT, TA_CENTER, TA_LEFT, TA_JUSTIFY
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.pdfform import resetPdfForm
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen.canvas import Canvas
 from reportlab.platypus import Paragraph, Table, Spacer, Image, PageBreak
@@ -532,6 +533,7 @@ class XmlParser(object):
             return None
 
     def parse(self, buffer):
+        resetPdfForm();  # work around for stupid global state in reportlab
         parts = self.parse_parts(buffer)
         return self.merge_parts(parts)
 
