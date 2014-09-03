@@ -19,6 +19,8 @@ from reportlab.platypus.flowables import Flowable, XBox
 from svglib.svglib import svg2rlg
 from svglib.svglib import SvgRenderer
 
+from flowables import TextField
+
 import xml.dom.minidom
 
 from django.conf import settings
@@ -644,6 +646,13 @@ class XmlParser(object):
         data = inner_xml(e)
         para = Paragraph(data, self.style_stack[-1] if len(self.style_stack) > 0 else self.styles['Normal'])
         yield para
+
+    def textfield(self, e):
+        name = e.get('name')
+        value = e.get('value')
+        width = int(e.get('width', "100"))
+        height = int(e.get('height', "20"))
+        yield TextField(name, width, height, value)
 
     def tstyle(self, e):
         area = e.get('area', '0:-1')
