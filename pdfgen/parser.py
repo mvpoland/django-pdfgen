@@ -9,6 +9,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.enums import TA_RIGHT, TA_CENTER, TA_LEFT, TA_JUSTIFY
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.pdfform import resetPdfForm
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen.canvas import Canvas
 from reportlab.platypus import Paragraph, Table, Spacer, Image, PageBreak
@@ -18,6 +19,8 @@ from reportlab.platypus.figures import DrawingFigure
 from reportlab.platypus.flowables import Flowable, XBox
 from svglib.svglib import svg2rlg
 from svglib.svglib import SvgRenderer
+
+from flowables import TextField
 
 import xml.dom.minidom
 
@@ -530,6 +533,7 @@ class XmlParser(object):
             return None
 
     def parse(self, buffer):
+        resetPdfForm();  # work around for stupid global state in reportlab
         parts = self.parse_parts(buffer)
         return self.merge_parts(parts)
 
@@ -644,6 +648,13 @@ class XmlParser(object):
         data = inner_xml(e)
         para = Paragraph(data, self.style_stack[-1] if len(self.style_stack) > 0 else self.styles['Normal'])
         yield para
+
+    def textfield(self, e):
+        name = e.get('name')
+        value = e.get('value')
+        width = int(e.get('width', "100"))
+        height = int(e.get('height', "20"))
+        yield TextField(name, width, height, value)
 
     def tstyle(self, e):
         area = e.get('area', '0:-1')
