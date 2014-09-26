@@ -297,6 +297,10 @@ class Parser(object):
                             self.parts_buffer_dict[self.parts_buffer] = []
                         else:
                             self.parts_buffer = None
+                    elif elem == 'E':
+                        args = line[2:].split(';')
+                        name, width, height, value = args
+                        self.append_to_parts(TextField(name, int(width), int(height), value))
                 elif c == '[':
                     mode = 1
                     raw_table_data += line + '\n'
@@ -382,6 +386,7 @@ class Parser(object):
             return None
 
     def parse(self, buffer):
+        resetPdfForm();  # work around for stupid global state in reportlab
         parts = self.parse_parts(buffer)
         return self.merge_parts(parts)
 
