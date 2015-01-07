@@ -547,9 +547,13 @@ class XmlParser(object):
         return list(self.parse_element(xdoc))
 
     def parse_element(self, e):
-        method = getattr(self, e.tag, self.parse_children)
-        for i in method(e):
-            yield i
+        try:
+            method = getattr(self, e.tag, self.parse_children)
+            for i in method(e):
+                yield i
+        except TypeError:
+            # some elements are not strings, like Comment
+            pass
 
     def parse_children(self, e):
         for c in e:
