@@ -52,7 +52,8 @@ def render_to_pdf_download(template_name, context, context_instance=None, filena
     """
     context_instance = context_instance or Context()
 
-    response = HttpResponse(mimetype='application/pdf')
+    response = HttpResponse()
+    response['Content-Type'] = 'application/pdf'
     if filename:
         response['Content-Disposition'] = u'attachment; filename=%s' % filename
 
@@ -137,7 +138,8 @@ def multiple_contexts_and_templates_to_pdf_download(contexts_templates, context_
     """
     Render multiple templates with multiple contexts into a single download
     """
-    response = HttpResponse(mimetype='application/pdf')
+    response = HttpResponse()
+    response['Content-Type'] = 'application/pdf'
     response['Content-Disposition'] = u'attachment; filename=%s' % (filename or u'document.pdf')
 
     output = multiple_contexts_and_templates_to_pdf_data(
