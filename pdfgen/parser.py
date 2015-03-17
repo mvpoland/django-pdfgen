@@ -464,7 +464,7 @@ class Parser(object):
                 new_dict[nk] = v
 
             if not new_dict.has_key('leading') and new_dict.has_key('fontSize'):
-                new_dict['leading'] = new_dict['fontSize'] * 1.25 # + 2.0
+                new_dict['leading'] = new_dict['fontSize'] * 1.5 # + 2.0
 
             if source_name is not None:
                 source_dict = self.styles[source_name].__dict__.copy()
@@ -613,7 +613,7 @@ class XmlParser(object):
             new_dict[nk] = v
 
         if not new_dict.has_key('leading') and new_dict.has_key('fontSize'):
-            new_dict['leading'] = new_dict['fontSize'] * 1.25 # + 2.0
+            new_dict['leading'] = new_dict['fontSize'] * 1.5 # + 2.0
 
         if source_name is not None:
             source_dict = self.styles[source_name].__dict__.copy()
