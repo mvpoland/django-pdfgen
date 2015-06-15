@@ -556,7 +556,7 @@ class XmlParser(object):
             w, h = (toLength(i.strip()) for i in format.split(','))
             format = (w, h)
         else:
-            format = eval('pagesizes.' + format.upper())
+            format = eval('pagesizes.' + format)
 
         topMargin, rightMargin, bottomMargin, leftMargin = (toLength(i.strip()) for i in raw_margins.split(','))
 
