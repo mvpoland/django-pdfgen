@@ -12,7 +12,7 @@ setup(
     author='Jef Geskens, City Live nv',
     packages=find_packages('.'),
     #package_dir={'': 'templates/*'},
-    install_requires="reportlab>=3.1.8",
+    install_requires="reportlab>=3.2.0",
     classifiers=[
         'Intended Audience :: Developers',
         'Programming Language :: Python',

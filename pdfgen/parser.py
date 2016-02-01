@@ -20,7 +20,7 @@ from reportlab.platypus.flowables import Flowable, XBox
 from svglib.svglib import svg2rlg
 from svglib.svglib import SvgRenderer
 
-from flowables import TextField
+from flowables import TextField, BackgroundImage
 
 import xml.dom.minidom
 
@@ -99,7 +99,8 @@ def split_ignore(haystack, needle, ignore_start=None, ignore_end=None):
     parts = []
     ignore_start = ignore_start or '<![CDATA['
     ignore_end = ignore_end or ']]>'
-    haystack_len, needle_len, ignore_start_len, ignore_end_len = len(haystack), len(needle), len(ignore_start), len(ignore_end)
+    haystack_len, needle_len, ignore_start_len, ignore_end_len = \
+        len(haystack), len(needle), len(ignore_start), len(ignore_end)
     ignore = False
     i = 0
     pi = -1
@@ -114,7 +115,8 @@ def split_ignore(haystack, needle, ignore_start=None, ignore_end=None):
             i += needle_len-1
             pi = i
             parts.append(part)
-        if not ignore and not unignored and i+ignore_start_len <= haystack_len and haystack[i:i+ignore_start_len] == ignore_start:
+        if not ignore and not unignored and i+ignore_start_len <= haystack_len and \
+                haystack[i:i+ignore_start_len] == ignore_start:
             ignore = True
         i += 1
     parts.append(haystack[pi+1:].replace(ignore_start, '').replace(ignore_end, ''))
@@ -248,7 +250,7 @@ class Parser(object):
                             svgRenderer.render(svg)
                             svg_obj = svgRenderer.finish()
 
-                            #svg_obj = svg2rlg(settings.MEDIA_ROOT + svg_path)
+                            # svg_obj = svg2rlg(settings.MEDIA_ROOT + svg_path)
                             svg_obj.scale(float(svg_scale), float(svg_scale))
                             svg_obj.asDrawing(float(svg_w) * self.unit, float(svg_h) * self.unit)
                             self.svg_dict[svg_name] = svg_obj
@@ -314,7 +316,10 @@ class Parser(object):
 
             if mode == 0:
                 if content != '':
-                    self.append_to_parts(Paragraph(content, self.style_stack[-1] if len(self.style_stack) > 0 else self.styles['Normal']))
+                    self.append_to_parts(
+                        Paragraph(
+                            content,
+                            self.style_stack[-1] if len(self.style_stack) > 0 else self.styles['Normal']))
                 content = ''
 
             if mode == 1:
@@ -349,7 +354,10 @@ class Parser(object):
                         elif cell_content[:2] == '~P':
                             self.table_row.append(self.parts_buffer_dict[cell_content[2:]])
                         else:
-                            self.table_row.append(Paragraph(cell_content, self.style_stack[-1] if len(self.style_stack) > 0 else self.styles['Normal']))
+                            self.table_row.append(
+                                Paragraph(
+                                    cell_content,
+                                    self.style_stack[-1] if len(self.style_stack) > 0 else self.styles['Normal']))
 
                         if pop_after_cell:
                             self.parse_paragraph_style('')
@@ -361,7 +369,12 @@ class Parser(object):
 
                     i += 1
                 if len(self.table_data) > 0:
-                    self.append_to_parts(Table(self.table_data, self.table_cols, hAlign=self.table_align, style=self.table_styles))
+                    self.append_to_parts(
+                        Table(
+                            self.table_data,
+                            self.table_cols,
+                            hAlign=self.table_align,
+                            style=self.table_styles))
                 self.reset_table()
                 raw_table_data = ''
 
@@ -386,7 +399,7 @@ class Parser(object):
             return None
 
     def parse(self, buffer):
-        resetPdfForm();  # work around for stupid global state in reportlab
+        resetPdfForm()  # work around for stupid global state in reportlab
         parts = self.parse_parts(buffer)
         return self.merge_parts(parts)
 
@@ -463,8 +476,8 @@ class Parser(object):
                     v = colors.HexColor(eval('0x' + v[1:]))
                 new_dict[nk] = v
 
-            if not new_dict.has_key('leading') and new_dict.has_key('fontSize'):
-                new_dict['leading'] = new_dict['fontSize'] * 1.5 # + 2.0
+            if 'leading' not in new_dict and 'fontSize' in new_dict:
+                new_dict['leading'] = new_dict['fontSize'] * 1.5  # + 2.0
 
             if source_name is not None:
                 source_dict = self.styles[source_name].__dict__.copy()
@@ -473,7 +486,7 @@ class Parser(object):
 
             new_dict.update({'name': name})
 
-            if self.styles.has_key(name):
+            if name in self.styles:
                 self.styles[name].__dict__.update(new_dict)
             else:
                 self.styles.add(ParagraphStyle(**new_dict))
@@ -482,7 +495,7 @@ class Parser(object):
             name = raw_style.strip()
             if name == 'end' or name == '':
                 self.style_stack.pop()
-            elif self.styles.has_key(name):
+            elif name in self.styles:
                 style = self.styles[name]
                 self.style_stack.append(style)
 
@@ -506,6 +519,7 @@ class XmlParser(object):
     media_url = ''
     #: the Django STATIC_URL
     static_url = ''
+    background = None
 
     def __init__(self):
         self.styles = getSampleStyleSheet()
@@ -527,9 +541,20 @@ class XmlParser(object):
 
         return find(url)
 
+    def set_background_image(self, canvas, doc):
+        canvas.saveState()
+
+        if self.background:
+            self.background.draw(canvas, doc)
+
+        canvas.restoreState()
+
     def merge_parts(self, parts):
         if self.document is not None:
-            self.document.build(parts)
+            self.document.build(
+                parts,
+                onFirstPage=self.set_background_image,
+                onLaterPages=self.set_background_image)
             output_data = self.out_buffer.getvalue()
             self.out_buffer.close()
 
@@ -538,7 +563,7 @@ class XmlParser(object):
             return None
 
     def parse(self, buffer):
-        resetPdfForm();  # work around for stupid global state in reportlab
+        resetPdfForm()  # work around for stupid global state in reportlab
         parts = self.parse_parts(buffer)
         return self.merge_parts(parts)
 
@@ -550,7 +575,13 @@ class XmlParser(object):
         try:
             method = getattr(self, e.tag, self.parse_children)
             for i in method(e):
-                yield i
+                # print isinstance(i, BackgroundImage)
+                if isinstance(i, BackgroundImage):
+                    # save the background image, don't add it to render list
+                    self.background = i
+                    continue
+                else:
+                    yield i
         except TypeError:
             # some elements are not strings, like Comment
             pass
@@ -612,8 +643,8 @@ class XmlParser(object):
                 v = colors.HexColor(eval('0x' + v[1:]))
             new_dict[nk] = v
 
-        if not new_dict.has_key('leading') and new_dict.has_key('fontSize'):
-            new_dict['leading'] = new_dict['fontSize'] * 1.5 # + 2.0
+        if 'leading' not in new_dict and 'fontSize' in new_dict:
+            new_dict['leading'] = new_dict['fontSize'] * 1.5  # + 2.0
 
         if source_name is not None:
             source_dict = self.styles[source_name].__dict__.copy()
@@ -622,7 +653,7 @@ class XmlParser(object):
 
         new_dict.update({'name': name})
 
-        if self.styles.has_key(name):
+        if name in self.styles:
             self.styles[name].__dict__.update(new_dict)
         else:
             self.styles.add(ParagraphStyle(**new_dict))
@@ -679,7 +710,7 @@ class XmlParser(object):
         if 'area' in tstyle_dict:
             del tstyle_dict['area']
 
-        if tstyle_dict.has_key('border'):
+        if 'border' in tstyle_dict:
             border = tstyle_dict['border']
             tstyle_dict.update({'border-left': border,
                                 'border-right': border,
@@ -688,7 +719,7 @@ class XmlParser(object):
                                 })
             del tstyle_dict['border']
 
-        if tstyle_dict.has_key('padding'):
+        if 'padding' in tstyle_dict:
             padding = tstyle_dict['padding']
             tstyle_dict.update({'padding-left': padding,
                                 'padding-right': padding,
@@ -775,9 +806,19 @@ class XmlParser(object):
         height = toLength(e.get('height'))
         path = e.get('src')
         align = e.get('align', 'left').upper()
+        background = e.get('background', 'False') == 'True'
+        vAlign = e.get('vertical-align', 'BOTTOM').upper()
 
-        img_obj = Image(self.get_from_url(path), width=width, height=height)
-        img_obj.hAlign = align
+        if background:
+            img_obj = BackgroundImage(
+                filename=self.get_from_url(path),
+                width=width,
+                height=height,
+                hAlign=align,
+                vAlign=vAlign)
+        else:
+            img_obj = Image(filename=self.get_from_url(path), width=width, height=height)
+            img_obj.hAlign = align
 
         yield img_obj
 
