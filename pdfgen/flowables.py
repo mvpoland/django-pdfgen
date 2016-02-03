@@ -24,18 +24,10 @@ class BackgroundImage(Image):
     """
     A background image (digital picture).
 
-    Formats supported by PIL/Java 1.4 (the Python/Java Imaging Library
-    are supported. Images as flowables may be aligned horizontally
-    in the frame with the hAlign parameter - accepted values are 'CENTER',
-    'LEFT' or 'RIGHT' with 'CENTER' being the default and vertically -
-    accepted values are 'CENTER', 'TOP' or 'BOTTOM' with 'CENTER' being
-    the default.
-
-    We allow for two kinds of lazyness to allow for many images in a document
-    which could lead to file handle starvation.
-
-    lazy=1 don't open image until required.
-    lazy=2 open image when required then shut it.
+    The image can be aligned via the hAlign parameter - accepted values
+    are 'CENTER', 'LEFT' or 'RIGHT' with 'CENTER' being the default and
+    vertically - accepted values are 'CENTER', 'TOP' or 'BOTTOM' with
+    'CENTER' being the default.
     """
     def __init__(self, filename, width=None, height=None, kind='absolute',
                  mask='auto', lazy=1, hAlign='CENTER', vAlign='CENTER'):
@@ -51,6 +43,7 @@ class BackgroundImage(Image):
                 hAlign=hAlign)
         except TypeError:
             # old style calling of parent
+            # this is still used by reportlab
             Image.__init__(
                 self,
                 filename=filename,
@@ -72,9 +65,6 @@ class BackgroundImage(Image):
         #   w   c    e
         #  sw   s   se
         anchor = ''
-
-        print '---'
-        print doc.pagesize
 
         if self.vAlign.upper() == 'TOP':
             anchor = 'n'
