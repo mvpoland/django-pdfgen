@@ -22,12 +22,12 @@ class TextField(Flowable):
 
 class BackgroundImage(Image):
     """
-    A background image (digital picture).
+    A background image (digital picture). See base class Image.
 
-    The image can be aligned via the hAlign parameter - accepted values
-    are 'CENTER', 'LEFT' or 'RIGHT' with 'CENTER' being the default and
-    vertically - accepted values are 'CENTER', 'TOP' or 'BOTTOM' with
-    'CENTER' being the default.
+    The background image can be aligned via the hAlign parameter - accepted
+    values are 'CENTER', 'LEFT' or 'RIGHT' with 'CENTER' being the default and
+    vertically - accepted values are 'CENTER', 'TOP' or 'BOTTOM' with 'CENTER'
+    being the default.
     """
     def __init__(self, filename, width=None, height=None, kind='absolute',
                  mask='auto', lazy=1, hAlign='CENTER', vAlign='CENTER'):
