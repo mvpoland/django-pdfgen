@@ -11,7 +11,7 @@ setup(
     long_description=open('README.rst', 'r').read(),
     author='Jef Geskens, City Live nv',
     packages=find_packages('.'),
-    #package_dir={'': 'templates/*'},
+    install_requires=["reportlab==2.4", "PyPDF2==1.19"],
     classifiers=[
         'Intended Audience :: Developers',
         'Programming Language :: Python',
