@@ -11,7 +11,7 @@ setup(
     long_description=open('README.rst', 'r').read(),
     author='Jef Geskens, City Live nv',
     packages=find_packages('.'),
-    install_requires=["reportlab==2.4", "PyPDF2==1.19", "svglib==0.6.3"],
+    install_requires=["reportlab==3.2", "PyPDF2==1.19", "svglib==0.8"],
     classifiers=[
         'Intended Audience :: Developers',
         'Programming Language :: Python',
