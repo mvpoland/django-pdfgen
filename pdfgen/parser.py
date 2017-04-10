@@ -20,6 +20,7 @@ from svglib.svglib import svg2rlg
 from svglib.svglib import SvgRenderer
 
 import xml.dom.minidom
+from lxml import etree
 
 from django.conf import settings
 try:
@@ -538,7 +539,7 @@ class XmlParser(object):
         return list(self.parse_element(xdoc))
 
     def parse_element(self, e):
-        method = getattr(self, e.tag, self.parse_children)
+        method = getattr(self, str(e.tag), self.parse_children)
         for i in method(e):
             yield i
 
@@ -739,23 +740,18 @@ class XmlParser(object):
         search = e.get('search', None)
         replace = e.get('replace', None)
 
-        fh = open(self.get_from_url(path), 'rb')
-        data = fh.read()
-        fh.close()
+        with open(self.get_from_url(path), 'rb') as fh:
+            data = fh.read()
+            if search is not None:
+               data = data.replace(search, replace)
 
-        if search is not None:
-            data = data.replace(search, replace)
+        svg = etree.fromstring(data)
+        renderer = SvgRenderer()
+        drawing = renderer.render(svg)
+        drawing.scale(scale, scale)
+        drawing.asDrawing(width, height)
 
-        svg = xml.dom.minidom.parseString(data).documentElement
-
-        svgRenderer = SvgRenderer()
-        svgRenderer.render(svg)
-        svg_obj = svgRenderer.finish()
-
-        svg_obj.scale(scale, scale)
-        svg_obj.asDrawing(width, height)
-
-        yield svg_obj
+        yield drawing
 
     def img(self, e):
         width = toLength(e.get('width'))
