@@ -1,22 +1,13 @@
-from reportlab.platypus.flowables import PageBreak
+import StringIO
+from itertools import repeat
 
-from django.conf import settings
-from django.http import HttpResponse
+from pdfgen.parser import Parser, XmlParser, find
+from PyPDF2 import PdfFileMerger, PdfFileReader
+
+from django.http import HttpResponse, StreamingHttpResponse
 from django.template.context import Context
 from django.template.loader import render_to_string
 from django.utils import translation
-
-from pdfgen.parser import Parser, XmlParser, find
-from itertools import repeat
-
-try:
-    from PyPDF2 import PdfFileMerger, PdfFileReader
-    USE_PYPDF2 = True
-except ImportError:
-    # Use old version as fallback
-    USE_PYPDF2 = False
-
-import StringIO
 
 
 def get_parser(template_name):
@@ -88,47 +79,46 @@ def multiple_contexts_to_pdf_download(template_name, contexts, context_instance=
     )
 
 
+def _chunk_pdf(contexts_templates, context_instance):
+    """
+    Stream merged PDF file
+    """
+    readers_list = []
+
+    for context, template_name in contexts_templates:
+        parser = get_parser(template_name)
+        if 'language' in context:
+            translation.activate(context['language'])
+
+        input_data = render_to_string(template_name, context, context_instance)
+        outstream = StringIO.StringIO()
+        outstream.write(parser.parse(input_data))
+        reader = PdfFileReader(outstream)
+        if reader not in readers_list:
+            readers_list.append(reader)
+
+        merger = PdfFileMerger()
+        for obj in readers_list:
+            merger.append(obj)
+
+        output = StringIO.StringIO()
+        merger.write(output)
+        output = output.getvalue()
+        yield output
+
+
 def multiple_contexts_and_templates_to_pdf_download(contexts_templates, context_instance=None, filename=None):
     """
     Render multiple templates with multiple contexts into a single download
     """
     context_instance = context_instance or Context()
 
-    response = HttpResponse()
-    response['Content-Type'] = 'application/pdf'
+    old_lang = translation.get_language()
+    response = StreamingHttpResponse(
+        _chunk_pdf(contexts_templates, context_instance),
+        content_type="application/pdf"
+    )
     response['Content-Disposition'] = u'attachment; filename=%s' % (filename or u'document.pdf')
 
-    if USE_PYPDF2:
-        merger = PdfFileMerger()
-    else:
-        all_parts = []
-
-    old_lang = translation.get_language()
-
-    for context, template_name in contexts_templates:
-        parser = get_parser(template_name)
-        if 'language' in context:
-            translation.activate(context['language'])
-        input = render_to_string(template_name, context, context_instance)
-        if USE_PYPDF2:
-            outstream = StringIO.StringIO()
-            outstream.write(parser.parse(input))
-            reader = PdfFileReader(outstream)
-            merger.append(reader)
-        else:
-            parts = parser.parse_parts(input)
-            all_parts += parts
-            all_parts.append(PageBreak())
-
     translation.activate(old_lang)
-
-    if USE_PYPDF2:
-        output = StringIO.StringIO()
-        merger.write(output)
-        output = output.getvalue()
-    else:
-        output = parser.merge_parts(all_parts)
-
-    response.write(output)
-
     return response
