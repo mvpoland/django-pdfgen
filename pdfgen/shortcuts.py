@@ -79,13 +79,28 @@ def multiple_contexts_to_pdf_download(template_name, contexts, context_instance=
     )
 
 
-def _chunk_pdf(contexts_templates, context_instance):
+def _merge_pdf(readers_list):
+    merger = PdfFileMerger()
+    for obj in readers_list:
+        merger.append(obj)
+
+    output = StringIO.StringIO()
+    merger.write(output)
+    output = output.getvalue()
+    return output
+
+
+def _get_chunked_pdf(contexts_templates, context_instance):
     """
     Stream merged PDF file
     """
     readers_list = []
+    count = 0
+    remainder = len(contexts_templates) % 10
+    base = len(contexts_templates) - remainder
 
     for context, template_name in contexts_templates:
+        count += 1
         parser = get_parser(template_name)
         if 'language' in context:
             translation.activate(context['language'])
@@ -97,14 +112,13 @@ def _chunk_pdf(contexts_templates, context_instance):
         if reader not in readers_list:
             readers_list.append(reader)
 
-        merger = PdfFileMerger()
-        for obj in readers_list:
-            merger.append(obj)
-
-        output = StringIO.StringIO()
-        merger.write(output)
-        output = output.getvalue()
-        yield output
+        if count < base:
+            if count % 10 == 0:
+                yield _merge_pdf(readers_list)
+            else:
+                continue
+        else:
+            yield _merge_pdf(readers_list)
 
 
 def multiple_contexts_and_templates_to_pdf_download(contexts_templates, context_instance=None, filename=None):
@@ -115,7 +129,7 @@ def multiple_contexts_and_templates_to_pdf_download(contexts_templates, context_
 
     old_lang = translation.get_language()
     response = StreamingHttpResponse(
-        _chunk_pdf(contexts_templates, context_instance),
+        _get_chunked_pdf(contexts_templates, context_instance),
         content_type="application/pdf"
     )
     response['Content-Disposition'] = u'attachment; filename=%s' % (filename or u'document.pdf')
