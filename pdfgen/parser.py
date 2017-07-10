@@ -19,6 +19,9 @@ from reportlab.platypus.flowables import Flowable, XBox
 from svglib.svglib import svg2rlg
 from svglib.svglib import SvgRenderer
 
+
+from reportlab.graphics.widgets.signsandsymbols import ArrowOne, ArrowTwo, SmileyFace
+
 import xml.dom.minidom
 from lxml import etree
 
@@ -660,22 +663,24 @@ class XmlParser(object):
         if 'area' in tstyle_dict:
             del tstyle_dict['area']
 
-        if tstyle_dict.has_key('border'):
+        if 'border' in tstyle_dict:
             border = tstyle_dict['border']
-            tstyle_dict.update({'border-left': border,
-                                'border-right': border,
-                                'border-top': border,
-                                'border-bottom': border
-                                })
+            tstyle_dict.update({
+                'border-left': border,
+                'border-right': border,
+                'border-top': border,
+                'border-bottom': border
+            })
             del tstyle_dict['border']
 
-        if tstyle_dict.has_key('padding'):
+        if 'padding' in tstyle_dict:
             padding = tstyle_dict['padding']
-            tstyle_dict.update({'padding-left': padding,
-                                'padding-right': padding,
-                                'padding-top': padding,
-                                'padding-bottom': padding
-                                })
+            tstyle_dict.update({
+                'padding-left': padding,
+                'padding-right': padding,
+                'padding-top': padding,
+                'padding-bottom': padding
+            })
             del tstyle_dict['padding']
 
         for key in tstyle_dict.keys():
@@ -726,6 +731,36 @@ class XmlParser(object):
 
     def pagebreak(self, e):
         yield PageBreak()
+
+    def sign(self, e):
+        text = e.get('text')
+        scale = float(e.get('scale', '1.0'))
+        width = toLength(e.get('width'))
+        height = toLength(e.get('height'))
+
+        template = """
+        <table cols="9.9cm, 1.9cm" align="right">
+            <tstyle padding="0" />
+            <tstyle area="0,0:-1,-1" padding-left="0.5cm"/>
+            <tr>
+                <td>
+                    <p>................................................................</p>
+                    <p><font size="8pt">{text}</font></p>
+                </td>
+                <td>
+                    <vector src="common/pdf_img/left-pointing-arrow.svg" scale="{scale}" width="{width}" height="{height}" />
+                </td>
+            </tr>
+        </table>
+        """.format(
+            text=text,
+            scale=scale,
+            width=width,
+            height=height,
+        )
+        element = self.parse_parts(template)
+        for i in element:
+            yield i
 
     def spacer(self, e):
         width = toLength(e.get('width', '1pt'))
