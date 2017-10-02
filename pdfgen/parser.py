@@ -484,7 +484,7 @@ class Parser(object):
 
 
 def inner_xml(e):
-    return etree.tostring(e)[len(e.tag)+2:-len(e.tag)-3]
+    return etree.tostring(e).strip()[len(e.tag)+2:-len(e.tag)-3]
 
 
 class XmlParser(object):
