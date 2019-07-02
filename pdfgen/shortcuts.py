@@ -1,13 +1,14 @@
+from itertools import repeat
+
 from reportlab.platypus.flowables import PageBreak
 
-from django.conf import settings
 from django.http import HttpResponse
 from django.template.context import Context
 from django.template.loader import render_to_string
 from django.utils import translation
 
+from pdfgen.compat import StringIO
 from pdfgen.parser import Parser, XmlParser, find
-from itertools import repeat
 
 try:
     from PyPDF2 import PdfFileMerger, PdfFileReader
@@ -16,15 +17,11 @@ except ImportError:
     # Use old version as fallback
     USE_PYPDF2 = False
 
-import StringIO
-
 
 def get_parser(template_name):
     """
     Get the correct parser based on the file extension
     """
-    import os
-
     if template_name[-4:] == '.xml':
         parser = XmlParser()
         # set the barcode file
@@ -110,8 +107,9 @@ def multiple_contexts_and_templates_to_pdf_download(contexts_templates, context_
         if 'language' in context:
             translation.activate(context['language'])
         input = render_to_string(template_name, context, context_instance)
+
         if USE_PYPDF2:
-            outstream = StringIO.StringIO()
+            outstream = StringIO()
             outstream.write(parser.parse(input))
             reader = PdfFileReader(outstream)
             merger.append(reader)
@@ -123,7 +121,7 @@ def multiple_contexts_and_templates_to_pdf_download(contexts_templates, context_
     translation.activate(old_lang)
 
     if USE_PYPDF2:
-        output = StringIO.StringIO()
+        output = StringIO()
         merger.write(output)
         output = output.getvalue()
     else:

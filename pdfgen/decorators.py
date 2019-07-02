@@ -1,12 +1,9 @@
 from django.conf import settings
-from django.shortcuts import render_to_response
 from django.template import loader, TemplateDoesNotExist
 from django.template import RequestContext
-from django.http import HttpResponse
 
 from functools import wraps
 
-from pdfgen.parser import Parser
 from pdfgen.shortcuts import render_to_pdf_download, multiple_templates_to_pdf_download
 
 
@@ -70,9 +67,19 @@ def pdf_download(default_template_name, default_file_name=None, default_context=
                 return view_result
 
             if isinstance(template_name, list):
-                response = multiple_templates_to_pdf_download(template_name, context, context_instance=RequestContext(request), filename=file_name)
+                response = multiple_templates_to_pdf_download(
+                    template_name,
+                    context,
+                    context_instance=RequestContext(request),
+                    filename=file_name
+                )
             else:
-                response = render_to_pdf_download(template_name, context, context_instance=RequestContext(request), filename=file_name)
+                response = render_to_pdf_download(
+                    template_name,
+                    context,
+                    context_instance=RequestContext(request),
+                    filename=file_name
+                )
 
             return response
 

@@ -4,7 +4,7 @@ from optparse import make_option
 from django.conf import settings
 from django.core.management.base import NoArgsCommand
 
-from pdfgen.parser import Parser
+from pdfgen.parser import Parser, XmlParser
 
 
 class Command(NoArgsCommand):

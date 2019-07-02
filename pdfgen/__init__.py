@@ -1,1 +1,8 @@
-__version__ = '1.4.2'
+VERSION = (1, 5, 0)
+
+__version__ = '.'.join(map(str, VERSION))
+
+
+__all__ = [
+    '__version__',
+]

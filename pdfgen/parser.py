@@ -1,11 +1,14 @@
-import codecs
 import logging
-import os
-from cStringIO import StringIO
-import reportlab
+import xml.dom.minidom
+
+from ast import literal_eval
+
+from django.conf import settings
+from django.contrib.staticfiles.finders import find
+from django.utils.encoding import force_str
+
 from reportlab.lib import pagesizes, colors
-from reportlab.lib.units import cm, inch, mm, toLength
-from reportlab.lib.pagesizes import A4
+from reportlab.lib.units import cm, mm, toLength
 from reportlab.lib.enums import TA_RIGHT, TA_CENTER, TA_LEFT, TA_JUSTIFY
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.pdfbase import pdfmetrics
@@ -13,47 +16,9 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen.canvas import Canvas
 from reportlab.platypus import Paragraph, Table, Spacer, Image, PageBreak
 from reportlab.platypus.doctemplate import SimpleDocTemplate
-from reportlab.platypus.frames import Frame
-from reportlab.platypus.figures import DrawingFigure
-from reportlab.platypus.flowables import Flowable, XBox
-from svglib.svglib import svg2rlg
 from svglib.svglib import SvgRenderer
 
-
-from reportlab.graphics.widgets.signsandsymbols import ArrowOne, ArrowTwo, SmileyFace
-
-import xml.dom.minidom
-from lxml import etree
-
-from django.conf import settings
-try:
-    from django.contrib.staticfiles.finders import find
-except ImportError:
-    def find(path):
-        return os.path.join(settings.MEDIA_ROOT, path)
-
-# find an etree implementation
-try:
-    from lxml import etree
-except ImportError:
-    try:
-        # Python 2.5
-        import xml.etree.cElementTree as etree
-    except ImportError:
-        try:
-            # Python 2.5
-            import xml.etree.ElementTree as etree
-        except ImportError:
-            try:
-                # normal cElementTree install
-                import cElementTree as etree
-            except ImportError:
-                try:
-                    # normal ElementTree install
-                    import elementtree.ElementTree as etree
-                except ImportError:
-                    print("Failed to import ElementTree from any known place")
-
+from pdfgen.compat import etree, StringIO, BytesIO, PY3
 from pdfgen.barcode import Barcode
 
 
@@ -79,14 +44,37 @@ CSS_DICT = {
     'justify': TA_JUSTIFY,
 }
 
+PAGE_SIZE_MAPPING = {
+    'A0': pagesizes.A0,
+    'A1': pagesizes.A1,
+    'A2': pagesizes.A2,
+    'A3': pagesizes.A3,
+    'A4': pagesizes.A4,
+    'A5': pagesizes.A5,
+    'A6': pagesizes.A6,
+
+    'B0': pagesizes.B0,
+    'B1': pagesizes.B1,
+    'B2': pagesizes.B2,
+    'B3': pagesizes.B3,
+    'B4': pagesizes.B4,
+    'B5': pagesizes.B5,
+    'B6': pagesizes.B6,
+
+    'LETTER': pagesizes.LETTER,
+    'LEGAL': pagesizes.LEGAL,
+    'ELEVENSEVENTEEN': pagesizes.ELEVENSEVENTEEN,
+}
+
 
 def _new_draw(self):
-    self.canv.setLineWidth(0.2*mm)
+    self.canv.setLineWidth(0.2 * mm)
     self.drawPara(self.debug)
 
 
 def patch_reportlab():
     setattr(Paragraph, 'draw', _new_draw)
+
 
 patch_reportlab()
 
@@ -100,7 +88,10 @@ def split_ignore(haystack, needle, ignore_start=None, ignore_end=None):
     parts = []
     ignore_start = ignore_start or '<![CDATA['
     ignore_end = ignore_end or ']]>'
-    haystack_len, needle_len, ignore_start_len, ignore_end_len = len(haystack), len(needle), len(ignore_start), len(ignore_end)
+    haystack_len = len(haystack)
+    needle_len = len(needle)
+    ignore_start_len = len(ignore_start)
+    ignore_end_len = len(ignore_end)
     ignore = False
     i = 0
     pi = -1
@@ -137,7 +128,7 @@ class Parser(object):
     img_dict = {}
 
     def import_pdf_font(self, base_name, face_name):
-        if self.fonts.get(face_name, None) is None:
+        if self.fonts.get(face_name) is None:
             afm = find(base_name + '.afm')
             pfb = find(base_name + '.pfb')
 
@@ -167,12 +158,18 @@ class Parser(object):
             self.parts.append(item)
             debug_print('Added part to root parts')
 
+    @staticmethod
+    def default_out_buffer():
+        if PY3:
+            return BytesIO()
+        return StringIO()
+
     def parse_parts(self, buffer):
         # prepare ReportLab
         self.styles = getSampleStyleSheet()
         self.style_stack.append(self.styles['Normal'])
         if self.out_buffer is None:
-            self.out_buffer = StringIO()
+            self.out_buffer = self.default_out_buffer()
         self.parts = []
 
         # prepare for parsing
@@ -245,7 +242,7 @@ class Parser(object):
 
                             svg = xml.dom.minidom.parseString(svg_data).documentElement
 
-                            svgRenderer = SvgRenderer()
+                            svgRenderer = SvgRenderer(None)
                             svgRenderer.render(svg)
                             svg_obj = svgRenderer.finish()
 
@@ -261,7 +258,11 @@ class Parser(object):
                             obj = self.img_dict[img_info[0]]
                         else:
                             img_name, img_w, img_h, img_path = img_info
-                            img_obj = Image(find(img_path), width=self.unit*float(img_w), height=self.unit*float(img_h))
+                            img_obj = Image(
+                                find(img_path),
+                                width=self.unit * float(img_w),
+                                height=self.unit * float(img_h)
+                            )
                             align = line[endpos+1:endpos+2]
                             if align == '<':
                                 img_obj.hAlign = 'LEFT'
@@ -276,12 +277,14 @@ class Parser(object):
                             obj = self.img_dict[barcode_info[0]]
                         else:
                             barcode_name, barcode_type, barcode_scale, barcode_w, barcode_h, barcode_data = barcode_info
-                            barcode_obj = Barcode(library=find('common/pdf_img/barcode.ps'),
-                                                  width=self.unit * float(barcode_w),
-                                                  height=self.unit * float(barcode_h),
-                                                  data=barcode_data,
-                                                  scale=float(barcode_scale),
-                                                  type=barcode_type)
+                            barcode_obj = Barcode(
+                                library=find('common/pdf_img/barcode.ps'),
+                                width=self.unit * float(barcode_w),
+                                height=self.unit * float(barcode_h),
+                                data=barcode_data,
+                                scale=float(barcode_scale),
+                                type=barcode_type
+                            )
                             align = line[endpos+1:endpos+2]
                             if align == '<':
                                 barcode_obj.hAlign = 'LEFT'
@@ -387,11 +390,11 @@ class Parser(object):
         return self.merge_parts(parts)
 
     def handle_document_properties(self, raw_properties, title):
-        format, raw_unit, raw_margins = raw_properties.split(';')
-        format = A4
+        __, raw_unit, raw_margins = raw_properties.split(';')
+        doc_format = pagesizes.A4
         unit = toLength('1%s' % raw_unit)
         self.unit = unit
-        topMargin, rightMargin, bottomMargin, leftMargin = (float(i) for i in raw_margins.split(','))
+        top_margin, right_margin, bottom_margin, left_margin = (float(i) for i in raw_margins.split(','))
 
         if self.doc is not None:
             return
@@ -401,14 +404,16 @@ class Parser(object):
             canvas.setLineWidth(0.25)
             return canvas
 
-        self.doc = SimpleDocTemplate(self.out_buffer,
-                                     pagesize=format,
-                                     title=title,
-                                     topMargin=topMargin*unit,
-                                     leftMargin=leftMargin*unit,
-                                     rightMargin=rightMargin*unit,
-                                     bottomMargin=bottomMargin*unit,
-                                     canvasmaker=make_canvas)
+        self.doc = SimpleDocTemplate(
+            self.out_buffer,
+            pagesize=doc_format,
+            title=title,
+            topMargin=top_margin * unit,
+            leftMargin=left_margin * unit,
+            rightMargin=right_margin * unit,
+            bottomMargin=bottom_margin * unit,
+            canvasmaker=make_canvas,
+        )
 
     def parse_table_style(self, raw_style):
         parts = raw_style.split('$')
@@ -424,7 +429,7 @@ class Parser(object):
         for i in xrange(len(params)):
             param = params[i]
             if param[0] == '#':
-                params[i] = colors.HexColor(eval('0x' + param[1:]))
+                params[i] = colors.HexColor(int('0x' + param[1:]))
             elif param[-1] == 'u':
                 params[i] = float(param[:-1])*self.unit
             else:
@@ -446,7 +451,7 @@ class Parser(object):
             else:
                 source_name = None
 
-            def_dict = eval(definition)
+            def_dict = literal_eval(definition)
             new_dict = {}
             for k in def_dict.keys():
                 v = def_dict[k]
@@ -456,10 +461,10 @@ class Parser(object):
                 if nk == 'fontSize' or nk == 'leading':
                     v = toLength(v)
                 elif nk == 'color':
-                    v = colors.HexColor(eval('0x' + v[1:]))
+                    v = colors.HexColor(int('0x' + v[1:], 0))
                 new_dict[nk] = v
 
-            if not new_dict.has_key('leading') and new_dict.has_key('fontSize'):
+            if 'leading' not in new_dict and 'fontSize' in new_dict:
                 new_dict['leading'] = new_dict['fontSize'] + 2.0
 
             if source_name is not None:
@@ -469,7 +474,7 @@ class Parser(object):
 
             new_dict.update({'name': name})
 
-            if self.styles.has_key(name):
+            if name in self.styles:
                 self.styles[name].__dict__.update(new_dict)
             else:
                 self.styles.add(ParagraphStyle(**new_dict))
@@ -478,7 +483,7 @@ class Parser(object):
             name = raw_style.strip()
             if name == 'end' or name == '':
                 self.style_stack.pop()
-            elif self.styles.has_key(name):
+            elif name in self.styles:
                 style = self.styles[name]
                 self.style_stack.append(style)
 
@@ -505,17 +510,23 @@ class XmlParser(object):
 
     def __init__(self):
         self.styles = getSampleStyleSheet()
-        self.out_buffer = StringIO()
+        self.out_buffer = self.default_out_buffer()
         self.style_stack = []
         self.media_url = getattr(settings, 'MEDIA_URL', '')
         self.static_url = getattr(settings, 'STATIC_URL', '')
 
+    @staticmethod
+    def default_out_buffer():
+        if PY3:
+            return BytesIO()
+        return StringIO()
+
     def get_from_url(self, url):
-        '''
+        """
         For a given URL, return the matching path to the directory.
 
         Support MEDIA_URL and STATIC_URL
-        '''
+        """
         if self.static_url and url.startswith(self.static_url):
             url = url.replace(self.static_url, '', 1)
         elif self.media_url and url.startswith(self.media_url):
@@ -538,7 +549,7 @@ class XmlParser(object):
         return self.merge_parts(parts)
 
     def parse_parts(self, buffer):
-        xdoc = etree.fromstring(buffer.encode('utf-8'))
+        xdoc = etree.fromstring(force_str(buffer))
         return list(self.parse_element(xdoc))
 
     def parse_element(self, e):
@@ -552,17 +563,17 @@ class XmlParser(object):
                 yield i
 
     def doc(self, e):
-        format = e.get('format', 'A4')
+        doc_format = e.get('format', 'A4')
         raw_margins = e.get('margin', '2cm, 2cm, 2cm, 2cm')
         title = e.get('title')
 
-        if ',' in format:
-            w, h = (toLength(i.strip()) for i in format.split(','))
-            format = (w, h)
+        if ',' in doc_format:
+            w, h = (toLength(i.strip()) for i in doc_format.split(','))
+            doc_format = (w, h)
         else:
-            format = eval('pagesizes.' + format)
+            doc_format = PAGE_SIZE_MAPPING.get(doc_format.upper(), pagesizes.A4)
 
-        topMargin, rightMargin, bottomMargin, leftMargin = (toLength(i.strip()) for i in raw_margins.split(','))
+        top_margin, right_margin, bottom_margin, left_margin = (toLength(i.strip()) for i in raw_margins.split(','))
 
         def make_canvas(*args, **kwargs):
             canvas = Canvas(*args, **kwargs)
@@ -570,14 +581,16 @@ class XmlParser(object):
             return canvas
 
         if self.document is None:
-            self.document = SimpleDocTemplate(self.out_buffer,
-                                              pagesize=format,
-                                              title=title,
-                                              topMargin=topMargin,
-                                              leftMargin=leftMargin,
-                                              rightMargin=rightMargin,
-                                              bottomMargin=bottomMargin,
-                                              canvasmaker=make_canvas)
+            self.document = SimpleDocTemplate(
+                self.out_buffer,
+                pagesize=doc_format,
+                title=title,
+                topMargin=top_margin,
+                leftMargin=left_margin,
+                rightMargin=right_margin,
+                bottomMargin=bottom_margin,
+                canvasmaker=make_canvas
+            )
 
         for i in self.parse_children(e):
             yield i
@@ -600,10 +613,10 @@ class XmlParser(object):
             if nk == 'fontSize' or nk == 'leading':
                 v = toLength(v)
             elif nk == 'color':
-                v = colors.HexColor(eval('0x' + v[1:]))
+                v = colors.HexColor(int('0x' + v[1:], 0))
             new_dict[nk] = v
 
-        if not new_dict.has_key('leading') and new_dict.has_key('fontSize'):
+        if 'leading' not in new_dict and 'fontSize' in new_dict:
             new_dict['leading'] = new_dict['fontSize'] + 2.0
 
         if source_name is not None:
@@ -613,22 +626,21 @@ class XmlParser(object):
 
         new_dict.update({'name': name})
 
-        if self.styles.has_key(name):
+        if name in self.styles:
             self.styles[name].__dict__.update(new_dict)
         else:
             self.styles.add(ParagraphStyle(**new_dict))
 
         # make this function an empty generator
-        if False:
-            yield
+        yield
 
     def font(self, e):
         name = e.get('name')
         path = e.get('src')
         self.import_pdf_font(path, name)
 
-        if False:
-            yield
+        # make this function an empty generator
+        yield
 
     def div(self, e):
         style = e.get('style', None)
@@ -691,7 +703,7 @@ class XmlParser(object):
             for i in xrange(len(params)):
                 param = params[i].strip()
                 if param[0] == '#':
-                    params[i] = colors.HexColor(eval('0x' + param[1:]))
+                    params[i] = colors.HexColor(int('0x' + param[1:], 0))
                 else:
                     try:
                         floatval = toLength(param)
@@ -781,7 +793,7 @@ class XmlParser(object):
                data = data.replace(search, replace)
 
         svg = etree.fromstring(data)
-        renderer = SvgRenderer()
+        renderer = SvgRenderer(None)
         drawing = renderer.render(svg)
         drawing.scale(scale, scale)
         drawing.asDrawing(width, height)
@@ -805,15 +817,17 @@ class XmlParser(object):
         height = toLength(e.get('height'))
         value = e.get('value')
         align = e.get('align', 'left').upper()
-        type = e.get('type', 'datamatrix')
+        barcode_type = e.get('type', 'datamatrix')
 
-        barcode_obj = Barcode(library=self.barcode_library,
-                              width=width,
-                              height=height,
-                              data=value,
-                              scale=scale,
-                              type=type,
-                              align=align.lower())
+        barcode_obj = Barcode(
+            library=self.barcode_library,
+            width=width,
+            height=height,
+            data=value,
+            scale=scale,
+            type=barcode_type,
+            align=align.lower()
+        )
 
         barcode_obj.hAlign = align
 
