@@ -1,6 +1,6 @@
+from __future__ import print_function
 from django.conf import settings
 from django.template import loader, TemplateDoesNotExist
-from django.template import RequestContext
 
 from functools import wraps
 
@@ -29,12 +29,12 @@ def pdf_download(default_template_name, default_file_name=None, default_context=
             try:
                 loader.get_template(default_template_name)
             except TemplateDoesNotExist:
-                print '\n=== ERROR: pdf_download detected missing template:'
-                print '            Template: %s' % default_template_name
+                print('\n=== ERROR: pdf_download detected missing template:')
+                print('            Template: %s' % default_template_name)
                 try:
-                    print '            From:     %s   def %s\n' % (view_func.func_code.co_filename, view_func.func_code.co_name)
+                    print('            From:     %s   def %s\n' % (view_func.func_code.co_filename, view_func.func_code.co_name))
                 except:
-                    print '            From:     %s\n' % unicode(view_func)
+                    print('            From:     %s\n' % str(view_func))
 
         @wraps(view_func)
         def decorate(request, *args, **kwargs):
@@ -70,14 +70,14 @@ def pdf_download(default_template_name, default_file_name=None, default_context=
                 response = multiple_templates_to_pdf_download(
                     template_name,
                     context,
-                    context_instance=RequestContext(request),
+                    request=request,
                     filename=file_name
                 )
             else:
                 response = render_to_pdf_download(
                     template_name,
                     context,
-                    context_instance=RequestContext(request),
+                    request=request,
                     filename=file_name
                 )
 

@@ -3,7 +3,6 @@ from itertools import repeat
 from reportlab.platypus.flowables import PageBreak
 
 from django.http import HttpResponse
-from django.template.context import Context
 from django.template.loader import render_to_string
 from django.utils import translation
 
@@ -31,29 +30,27 @@ def get_parser(template_name):
         return Parser()
 
 
-def render_to_pdf_data(template_name, context, context_instance=None):
+def render_to_pdf_data(template_name, context, request=None):
     """
     Parse the template into binary PDF data
     """
-    context_instance = context_instance or Context()
 
-    input = render_to_string(template_name, context, context_instance)
+    input = render_to_string(template_name, context, request=request)
     parser = get_parser(template_name)
 
     return parser.parse(input)
 
 
-def render_to_pdf_download(template_name, context, context_instance=None, filename=None):
+def render_to_pdf_download(template_name, context, request=None, filename=None):
     """
     Parse the template into a download
     """
-    context_instance = context_instance or Context()
 
     response = HttpResponse()
     response['Content-Type'] = 'application/pdf'
     response['Content-Disposition'] = u'attachment; filename=%s' % (filename or u'document.pdf')
 
-    input = render_to_string(template_name, context, context_instance)
+    input = render_to_string(template_name, context, request=request)
 
     parser = get_parser(template_name)
     output = parser.parse(input)
@@ -63,33 +60,32 @@ def render_to_pdf_download(template_name, context, context_instance=None, filena
     return response
 
 
-def multiple_templates_to_pdf_download(template_names, context, context_instance=None, filename=None):
+def multiple_templates_to_pdf_download(template_names, context, request=None, filename=None):
     """
     Render multiple templates with the same context into a single download
     """
     return multiple_contexts_and_templates_to_pdf_download(
         zip(repeat(context, len(template_names)), template_names),
-        context_instance=context_instance,
+        request=request,
         filename=filename
     )
 
 
-def multiple_contexts_to_pdf_download(template_name, contexts, context_instance=None, filename=None):
+def multiple_contexts_to_pdf_download(template_name, contexts, request=None, filename=None):
     """
     Render a single template with multiple contexts into a single download
     """
     return multiple_contexts_and_templates_to_pdf_download(
         zip(contexts, repeat(template_name, len(contexts))),
-        context_instance=context_instance,
+        request=request,
         filename=filename
     )
 
 
-def multiple_contexts_and_templates_to_pdf_download(contexts_templates, context_instance=None, filename=None):
+def multiple_contexts_and_templates_to_pdf_download(contexts_templates, request=None, filename=None):
     """
     Render multiple templates with multiple contexts into a single download
     """
-    context_instance = context_instance or Context()
 
     response = HttpResponse()
     response['Content-Type'] = 'application/pdf'
@@ -106,7 +102,7 @@ def multiple_contexts_and_templates_to_pdf_download(contexts_templates, context_
         parser = get_parser(template_name)
         if 'language' in context:
             translation.activate(context['language'])
-        input = render_to_string(template_name, context, context_instance)
+        input = render_to_string(template_name, context, request=request)
 
         if USE_PYPDF2:
             outstream = StringIO()
