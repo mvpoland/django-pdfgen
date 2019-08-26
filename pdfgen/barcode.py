@@ -3,7 +3,7 @@ from reportlab.platypus.flowables import Flowable
 
 class Barcode(Flowable):
     def __init__(self, library, width, height, data, scale=1, type='datamatrix', align='left'):
-        '''
+        """
         Creates a Barcode Flowable
 
         * width and height define the size in ReportLab points (for example 2*cm x 2*cm)
@@ -11,7 +11,7 @@ class Barcode(Flowable):
         * scale allows you to resize the barcode (default 1)
         * type is the type of the barcode (default 'datamatrix').
           Other types can be found in media/common/pdf_img/barcode.ps
-        '''
+        """
 
         Flowable.__init__(self)
 
@@ -45,19 +45,22 @@ class Barcode(Flowable):
         res = 72 * self.resolution_factor * self.scale  # DPI resolution
         type = self.type
 
-        bbox_proc = subprocess.Popen(['gs',
-                                      '-sDEVICE=bbox',
-                                      '-sBARCODEDATA=%(data)s' % locals(),
-                                      '-dBARCODETYPE=/%(type)s' % locals(),
-                                      '-q',
-                                      '-dNOPAUSE',
-                                      '-dBATCH',
-                                      '-dSAFER',
-                                      '-r%(res)d' % locals(),
-                                      barcode_path],
-                                      stdout=subprocess.PIPE,
-                                      stderr=subprocess.PIPE,
-                                      )
+        bbox_proc = subprocess.Popen(
+            [
+                'gs',
+                '-sDEVICE=bbox',
+                '-sBARCODEDATA=%(data)s' % locals(),
+                '-dBARCODETYPE=/%(type)s' % locals(),
+                '-q',
+                '-dNOPAUSE',
+                '-dBATCH',
+                '-dSAFER',
+                '-r%(res)d' % locals(),
+                barcode_path
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
 
         raw_bbox = bbox_proc.communicate()
         if not len(raw_bbox[0]) and len(raw_bbox[1]):
@@ -70,18 +73,20 @@ class Barcode(Flowable):
             temp_w = pw * self.scale * self.resolution_factor
             temp_h = ph * self.scale * self.resolution_factor
 
-            result = subprocess.call(['gs',
-                                      '-sDEVICE=pngalpha',
-                                      '-sOutputFile=%(temp_png)s' % locals(),
-                                      '-sBARCODEDATA=%(data)s' % locals(),
-                                      '-dBARCODETYPE=/%(type)s' % locals(),
-                                      '-g%(temp_w)dx%(temp_h)d' % locals(),
-                                      '-q',
-                                      '-dNOPAUSE',
-                                      '-dBATCH',
-                                      '-dSAFER',
-                                      '-r%(res)d' % locals(),
-                                      barcode_path])
+            result = subprocess.call([
+                'gs',
+                '-sDEVICE=pngalpha',
+                '-sOutputFile=%(temp_png)s' % locals(),
+                '-sBARCODEDATA=%(data)s' % locals(),
+                '-dBARCODETYPE=/%(type)s' % locals(),
+                '-g%(temp_w)dx%(temp_h)d' % locals(),
+                '-q',
+                '-dNOPAUSE',
+                '-dBATCH',
+                '-dSAFER',
+                '-r%(res)d' % locals(),
+                barcode_path
+            ])
 
             if os.path.exists(temp_png):
                 if self.align == 'left':
