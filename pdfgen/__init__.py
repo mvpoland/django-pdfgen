@@ -1,6 +1,4 @@
-VERSION = (1, 5, 0)
-
-__version__ = '.'.join(map(str, VERSION))
+__version__ = "1.6.0"
 
 
 __all__ = [

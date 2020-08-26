@@ -1,3 +1,4 @@
+from builtins import zip
 from itertools import repeat
 
 from reportlab.platypus.flowables import PageBreak
@@ -65,7 +66,7 @@ def multiple_templates_to_pdf_download(template_names, context, request=None, fi
     Render multiple templates with the same context into a single download
     """
     return multiple_contexts_and_templates_to_pdf_download(
-        zip(repeat(context, len(template_names)), template_names),
+        list(zip(repeat(context, len(template_names)), template_names)),
         request=request,
         filename=filename
     )
@@ -76,7 +77,7 @@ def multiple_contexts_to_pdf_download(template_name, contexts, request=None, fil
     Render a single template with multiple contexts into a single download
     """
     return multiple_contexts_and_templates_to_pdf_download(
-        zip(contexts, repeat(template_name, len(contexts))),
+        list(zip(contexts, repeat(template_name, len(contexts)))),
         request=request,
         filename=filename
     )

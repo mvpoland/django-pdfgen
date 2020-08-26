@@ -1,3 +1,7 @@
+from __future__ import print_function
+from builtins import str
+from builtins import range
+from builtins import object
 import logging
 import xml.dom.minidom
 
@@ -426,7 +430,7 @@ class Parser(object):
         desc = CSS_DICT.get(parts[1], parts[1].upper())
         params = parts[2:]
 
-        for i in xrange(len(params)):
+        for i in range(len(params)):
             param = params[i]
             if param[0] == '#':
                 params[i] = colors.HexColor(int('0x' + param[1:]))
@@ -453,7 +457,7 @@ class Parser(object):
 
             def_dict = literal_eval(definition)
             new_dict = {}
-            for k in def_dict.keys():
+            for k in list(def_dict.keys()):
                 v = def_dict[k]
                 nk = CSS_DICT.get(k, k)
                 # translate v
@@ -605,7 +609,7 @@ class XmlParser(object):
             del def_dict['base']
 
         new_dict = {}
-        for k in def_dict.keys():
+        for k in list(def_dict.keys()):
             v = def_dict[k]
             nk = CSS_DICT.get(k, k)
             # translate v
@@ -695,12 +699,12 @@ class XmlParser(object):
             })
             del tstyle_dict['padding']
 
-        for key in tstyle_dict.keys():
+        for key in list(tstyle_dict.keys()):
             value = tstyle_dict[key]
             desc = CSS_DICT.get(key, key.upper())
             params = value.split(',')
 
-            for i in xrange(len(params)):
+            for i in range(len(params)):
                 param = params[i].strip()
                 if param[0] == '#':
                     params[i] = colors.HexColor(int('0x' + param[1:], 0))
