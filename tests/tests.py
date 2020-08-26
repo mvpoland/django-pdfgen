@@ -1,3 +1,4 @@
+from builtins import str
 from django.test import TestCase
 
 from pdfgen.parser import XmlParser

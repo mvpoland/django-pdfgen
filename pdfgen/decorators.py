@@ -1,4 +1,5 @@
 from __future__ import print_function
+from builtins import str
 from django.conf import settings
 from django.template import loader, TemplateDoesNotExist
 
@@ -32,7 +33,7 @@ def pdf_download(default_template_name, default_file_name=None, default_context=
                 print('\n=== ERROR: pdf_download detected missing template:')
                 print('            Template: %s' % default_template_name)
                 try:
-                    print('            From:     %s   def %s\n' % (view_func.func_code.co_filename, view_func.func_code.co_name))
+                    print('            From:     %s   def %s\n' % (view_func.__code__.co_filename, view_func.__code__.co_name))
                 except:
                     print('            From:     %s\n' % str(view_func))
 

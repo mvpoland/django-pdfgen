@@ -1,3 +1,4 @@
+from __future__ import print_function
 import codecs
 from optparse import make_option
 
