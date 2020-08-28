@@ -1,4 +1,4 @@
-import os
+import os.path
 
 INSTALLED_APPS = [
     'django.contrib.contenttypes',
@@ -19,3 +19,7 @@ DATABASES = {
         }
     },
 }
+
+STATICFILES_DIRS = (
+    os.path.join(os.path.dirname(__file__), 'assets'),
+)
