@@ -794,7 +794,7 @@ class XmlParser(object):
         with open(self.get_from_url(path), 'rb') as fh:
             data = fh.read()
             if search is not None:
-               data = data.replace(search, replace)
+                data = data.replace(search.encode(), replace.encode())
 
         svg = etree.fromstring(data)
         renderer = SvgRenderer(None)
