@@ -1,5 +1,3 @@
-from __future__ import division
-from past.utils import old_div
 from reportlab.platypus.flowables import Flowable
 
 
@@ -94,7 +92,7 @@ class Barcode(Flowable):
                 if self.align == 'left':
                     x = 0
                 elif self.align == 'center':
-                    x = old_div((self.width - bbox_w), 2.0)
+                    x = (self.width - bbox_w) / 2.0
                 else:
                     x = self.width - bbox_w
                 y = self.height - bbox_h

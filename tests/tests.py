@@ -1,16 +1,12 @@
-from builtins import str
 from django.test import TestCase
 
 from pdfgen.parser import XmlParser
-from pdfgen.compat import PY3
 
 
 class SimpleParserTest(TestCase):
 
     def _convert_to_str(self, text):
-        if PY3:
-            return str(text, 'utf-8', 'ignore')
-        return text
+        return str(text, 'utf-8', 'ignore')
 
     def test_simple_test_xml_parser(self):
         xml_template = """

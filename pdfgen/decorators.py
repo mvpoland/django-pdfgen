@@ -1,5 +1,3 @@
-from __future__ import print_function
-from builtins import str
 from django.conf import settings
 from django.template import loader, TemplateDoesNotExist
 

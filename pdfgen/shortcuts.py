@@ -1,4 +1,4 @@
-from builtins import zip
+from io import StringIO
 from itertools import repeat
 
 from reportlab.platypus.flowables import PageBreak
@@ -7,7 +7,6 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import translation
 
-from pdfgen.compat import StringIO
 from pdfgen.parser import Parser, XmlParser, find
 
 try:
