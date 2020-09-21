@@ -1,11 +1,8 @@
-from __future__ import print_function
-from builtins import str
-from builtins import range
-from builtins import object
 import logging
 import xml.dom.minidom
 
 from ast import literal_eval
+from io import StringIO, BytesIO
 
 from django.conf import settings
 from django.contrib.staticfiles.finders import find
@@ -22,7 +19,7 @@ from reportlab.platypus import Paragraph, Table, Spacer, Image, PageBreak
 from reportlab.platypus.doctemplate import SimpleDocTemplate
 from svglib.svglib import SvgRenderer
 
-from pdfgen.compat import etree, StringIO, BytesIO, PY3
+from pdfgen.compat import etree
 from pdfgen.barcode import Barcode
 
 
@@ -117,7 +114,7 @@ def split_ignore(haystack, needle, ignore_start=None, ignore_end=None):
     return parts
 
 
-class Parser(object):
+class Parser:
     styles = None
     out_buffer = None
     doc = None
@@ -164,9 +161,7 @@ class Parser(object):
 
     @staticmethod
     def default_out_buffer():
-        if PY3:
-            return BytesIO()
-        return StringIO()
+        return BytesIO()
 
     def parse_parts(self, buffer):
         # prepare ReportLab
@@ -496,7 +491,7 @@ def inner_xml(e):
     return etree.tostring(e).strip()[len(e.tag)+2:-len(e.tag)-3]
 
 
-class XmlParser(object):
+class XmlParser:
     """
     Management command to create a pdf
     """
@@ -521,9 +516,7 @@ class XmlParser(object):
 
     @staticmethod
     def default_out_buffer():
-        if PY3:
-            return BytesIO()
-        return StringIO()
+        return BytesIO()
 
     def get_from_url(self, url):
         """

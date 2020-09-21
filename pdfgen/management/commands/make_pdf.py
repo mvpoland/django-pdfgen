@@ -1,11 +1,9 @@
-from __future__ import print_function
 import codecs
 from optparse import make_option
 
-from django.conf import settings
 from django.core.management.base import NoArgsCommand
 
-from pdfgen.parser import Parser, XmlParser
+from pdfgen.parser import Parser
 
 
 class Command(NoArgsCommand):
