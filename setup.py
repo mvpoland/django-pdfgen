@@ -14,7 +14,7 @@ setup(
     packages=find_packages("."),
     install_requires=[
         "reportlab==3.5.48",
-        "PyPDF2==1.26.0",
+        "PyPDF2==1.27.5",
         "svglib==0.9.4",
     ],
     python_requires=">=3.5",
