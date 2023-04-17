@@ -13,7 +13,7 @@ setup(
     author="Jef Geskens, City Live nv",
     packages=find_packages("."),
     install_requires=[
-        "reportlab==3.5.48",
+        "reportlab==3.5.55",
         "PyPDF2==1.26.0",
         "svglib==0.9.4",
     ],
