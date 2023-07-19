@@ -2,7 +2,7 @@ import logging
 import xml.dom.minidom
 
 from ast import literal_eval
-from io import StringIO, BytesIO
+from io import BytesIO
 
 from django.conf import settings
 from django.contrib.staticfiles.finders import find
@@ -803,7 +803,11 @@ class XmlParser:
         path = e.get('src')
         align = e.get('align', 'left').upper()
 
-        img_obj = Image(self.get_from_url(path), width=width, height=height)
+        if "base64" in path:
+            img_file = path
+        else:
+            img_file = self.get_from_url(path)
+        img_obj = Image(img_file, width=width, height=height)
         img_obj.hAlign = align
 
         yield img_obj

@@ -1,20 +1,13 @@
 from io import StringIO
 from itertools import repeat
 
-from reportlab.platypus.flowables import PageBreak
-
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import translation
 
 from pdfgen.parser import Parser, XmlParser, find
 
-try:
-    from PyPDF2 import PdfFileMerger, PdfFileReader
-    USE_PYPDF2 = True
-except ImportError:
-    # Use old version as fallback
-    USE_PYPDF2 = False
+from pypdf import PdfMerger, PdfReader
 
 
 def get_parser(template_name):
@@ -91,10 +84,7 @@ def multiple_contexts_and_templates_to_pdf_download(contexts_templates, request=
     response['Content-Type'] = 'application/pdf'
     response['Content-Disposition'] = u'attachment; filename=%s' % (filename or u'document.pdf')
 
-    if USE_PYPDF2:
-        merger = PdfFileMerger()
-    else:
-        all_parts = []
+    merger = PdfMerger()
 
     old_lang = translation.get_language()
 
@@ -104,24 +94,16 @@ def multiple_contexts_and_templates_to_pdf_download(contexts_templates, request=
             translation.activate(context['language'])
         input = render_to_string(template_name, context, request=request)
 
-        if USE_PYPDF2:
-            outstream = StringIO()
-            outstream.write(parser.parse(input))
-            reader = PdfFileReader(outstream)
-            merger.append(reader)
-        else:
-            parts = parser.parse_parts(input)
-            all_parts += parts
-            all_parts.append(PageBreak())
+        outstream = StringIO()
+        outstream.write(parser.parse(input))
+        reader = PdfReader(outstream)
+        merger.append(reader)
 
     translation.activate(old_lang)
 
-    if USE_PYPDF2:
-        output = StringIO()
-        merger.write(output)
-        output = output.getvalue()
-    else:
-        output = parser.merge_parts(all_parts)
+    output = StringIO()
+    merger.write(output)
+    output = output.getvalue()
 
     response.write(output)
 

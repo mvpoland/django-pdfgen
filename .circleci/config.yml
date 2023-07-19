@@ -10,7 +10,7 @@ common: &common
           - v3-deps-{{ .Environment.CIRCLE_JOB }}-{{ checksum "tox.ini" }}
     - run:
         name: install dependencies
-        command: pip install --user tox
+        command: pip install --user "tox<4"
     - run:
         name: run tox
         command: ~/.local/bin/tox
@@ -24,35 +24,14 @@ common: &common
 
 
 jobs:
-  py35:
-    <<: *common
-    docker:
-      - image: circleci/python:3.5
-        environment:
-          TOXENV=py35-dj20,py35-dj21,py35-dj22
-  py36:
-    <<: *common
-    docker:
-      - image: circleci/python:3.6
-        environment:
-          TOXENV=py36-dj20,py36-dj21,py36-dj22
-  py37:
-    <<: *common
-    docker:
-      - image: circleci/python:3.7
-        environment:
-          TOXENV=py37-dj20,py37-dj21,py37-dj22
   py38:
     <<: *common
     docker:
       - image: circleci/python:3.8
         environment:
-          TOXENV=py38-dj22,py38-dj30,py38-dj31
+          TOXENV=py38-dj30,py38-dj31
 
 workflows:
   test:
     jobs:
-      - py35
-      - py36
-      - py37
       - py38
